@@ -4,18 +4,16 @@
 @copyright    : Copyright 2015, Nicolas BESSOU
 """
 
-__all__ = ['struct']
+__all__ = ['mutabletuple']
 
 
-from namedlist import namedlist
-from namedlist import NO_DEFAULT
-import pprint
+from namedlist import namedlist, NO_DEFAULT
 
 #******************************************************************************
 # Local functions
 #******************************************************************************
-def _isstruct(element):
-    return True if hasattr(element, 'structUniqueIdentifier') else False
+def _ismutabletuple(element):
+    return True if hasattr(element, 'mutabletupleUniqueIdentifier') else False
 
 #******************************************************************************
 # Common member functions
@@ -28,7 +26,7 @@ def _asdict(self):
     newdict = {}
     for key in self._fields:
         value = getattr(self, key)
-        if _isstruct(value):
+        if _ismutabletuple(value):
             newdict[key] = value.asdict()
         else:
             newdict[key] = value
@@ -40,12 +38,12 @@ def _iteritems(self):
         yield (key, getattr(self, key))
 
 def _merge(self, container):
-    """Merge current struct with another struct or dictionary."""
+    """Merge current mutabletuple with another mutabletuple or dictionary."""
     if not hasattr(container, 'iteritems'):
         raise TypeError('???')
 
     for (key, value) in container.iteritems():
-        if _isstruct(value) or isinstance(value, dict):
+        if _ismutabletuple(value) or isinstance(value, dict):
             self.key.merge(value)
         else:
             setattr(self, key, value)
@@ -54,7 +52,7 @@ def _merge(self, container):
 #******************************************************************************
 # Factory
 #******************************************************************************
-def struct(typename, field_names, default=NO_DEFAULT, rename=False,
+def mutabletuple(typename, field_names, default=NO_DEFAULT, rename=False,
               use_slots=True):
 
     nl = namedlist(typename, field_names, default, rename, use_slots)
@@ -62,7 +60,7 @@ def struct(typename, field_names, default=NO_DEFAULT, rename=False,
     nl.asdict = _asdict
     nl.iteritems = _iteritems
 
-    nl.structUniqueIdentifier = None
+    nl.mutabletupleUniqueIdentifier = None
     return nl
 
 
@@ -70,9 +68,9 @@ def struct(typename, field_names, default=NO_DEFAULT, rename=False,
 # Main
 #******************************************************************************
 def main():
-    Point  = struct('Point', [('x', 0), ('y', 0)])
-    Vector = struct('Vector', [('p1', Point()), ('p2', Point())])
-    Shape  = struct('Shape', [('v1', Vector()), ('v2', Vector())])
+    Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
+    Vector = mutabletuple('Vector', [('p1', Point()), ('p2', Point())])
+    Shape  = mutabletuple('Shape', [('v1', Vector()), ('v2', Vector())])
 
     p1 = Point(2, 3)
     v1 = Vector(Point(), p1)

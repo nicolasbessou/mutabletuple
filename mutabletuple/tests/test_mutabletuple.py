@@ -21,6 +21,10 @@
 #
 ########################################################################
 
+__all__ = [
+    'Fruit',
+    ]
+
 from namedlist import namedlist, namedtuple, FACTORY, NO_DEFAULT
 
 import sys
@@ -728,7 +732,3 @@ def _add_unittest_methods(cls):
                      ('assertNotIn', _assertNotIn)]:
         if not hasattr(cls, name):
             setattr(cls, name, fn)
-
-_add_unittest_methods(TestNamedList)
-
-unittest.main()
