@@ -4,25 +4,28 @@
 @copyright    : Copyright 2015, Nicolas BESSOU
 """
 
+from namedlist import namedlist, NO_DEFAULT
+
 __all__ = ['mutabletuple']
 
 
-from namedlist import namedlist, NO_DEFAULT
-
-#******************************************************************************
+# *****************************************************************************
 # Local functions
-#******************************************************************************
+# *****************************************************************************
 def _ismutabletuple(element):
-    return True if hasattr(element, 'mutabletupleUniqueIdentifier') else False
+    return True if hasattr(element, 'MutableTupleUniqueIdentifier') else False
 
-#******************************************************************************
-# Common member functions
-#******************************************************************************
-def _repr(self):
-    """Print as classic dict."""
+
+# *****************************************************************************
+# Common member functions that extends namedlist functionality
+# *****************************************************************************
+def _mt_repr(self):
+    """Print like dict."""
     return '{{{0}}}'.format(', '.join('\'{0}\': {1!r}'.format(name, getattr(self, name)) for name in self._fields))
 
-def _asdict(self):
+
+def _mt_asdict(self):
+    """Recursively convert mutabletuple to a dict."""
     newdict = {}
     for key in self._fields:
         value = getattr(self, key)
@@ -31,13 +34,15 @@ def _asdict(self):
         else:
             newdict[key] = value
     return newdict
-    # return eval(str(self))
 
-def _iteritems(self):
+
+def _mt_iteritems(self):
+    """Iterate like dict."""
     for key in self._fields:
         yield (key, getattr(self, key))
 
-def _merge(self, container):
+
+def _mt_merge(self, container):
     """Merge current mutabletuple with another mutabletuple or dictionary."""
     if not hasattr(container, 'iteritems'):
         raise TypeError('???')
@@ -49,39 +54,29 @@ def _merge(self, container):
             setattr(self, key, value)
 
 
-#******************************************************************************
+def _mt_getattr(self, attr):
+    """Get attribute from []."""
+    return self[attr]
+
+
+def _mt_setattr(self, attr, value):
+    """Set attribute from []."""
+    self[attr] = value
+
+
+# *****************************************************************************
 # Factory
-#******************************************************************************
-def mutabletuple(typename, field_names, default=NO_DEFAULT, rename=False,
-              use_slots=True):
+# *****************************************************************************
+def mutabletuple(typename, field_names, default=NO_DEFAULT):
+    """Factory function that creates a mutabletuple."""
+    newtuple = namedlist(typename, field_names, default)
 
-    nl = namedlist(typename, field_names, default, rename, use_slots)
-    nl.__repr__ = _repr
-    nl.asdict = _asdict
-    nl.iteritems = _iteritems
+    # Declare unique identifier to identify namedtuple class
+    newtuple.MutableTupleUniqueIdentifier = None
 
-    nl.mutabletupleUniqueIdentifier = None
-    return nl
+    # Extend namedlist functionality
+    newtuple.__repr__  = _mt_repr
+    newtuple._asdict   = _mt_asdict
+    newtuple.iteritems = _mt_iteritems
 
-
-#******************************************************************************
-# Main
-#******************************************************************************
-def main():
-    Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
-    Vector = mutabletuple('Vector', [('p1', Point()), ('p2', Point())])
-    Shape  = mutabletuple('Shape', [('v1', Vector()), ('v2', Vector())])
-
-    p1 = Point(2, 3)
-    v1 = Vector(Point(), p1)
-    s1 = Shape()
-
-    d1 = s1.asdict()
-
-    for (k, v) in s1.iteritems():
-        print (k, v)
-
-    # pprint.pprint(d1, width=1)
-
-if __name__ == '__main__':
-    main()
+    return newtuple
