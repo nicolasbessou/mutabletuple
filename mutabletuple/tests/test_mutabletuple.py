@@ -6,15 +6,21 @@ from mutabletuple import mutabletuple, MtFactory, MtNoDefault
 # Native import
 import unittest
 import pickle
+from collections import OrderedDict
 
 __all__ = ['TestMutableTuple']
 
 
 class TestMutableTuple(unittest.TestCase):
 
-    # NB: TODO: Test from dict
-    # NB: TODO: Test MtNoDefault
-    # NB: TODO: Test MtFactory with args
+    def test_factory_with_args(self):
+        Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
+        Vector = mutabletuple('Vector', [('p1', MtFactory(Point, 2)), ('p2', MtFactory(Point, 4, 8))])
+
+        v1     = Vector()
+        self.assertEqual(v1, Vector(Point(2, 0), Point(4, 8)))
+        self.assertEqual(str(v1), "{'p1': {'x': 2, 'y': 0}, 'p2': {'x': 4, 'y': 8}}")
+
 
     def test_factory_and_nested(self):
         Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
@@ -84,6 +90,12 @@ class TestMutableTuple(unittest.TestCase):
         self.assertEqual(str(s), "{'v1': {'p1': {'x': 20, 'y': 0}, 'p2': {'x': 30, 'y': 40}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}}")
         self.assertEqual(s._asdict(), {'v1': {'p1': {'x': 20, 'y': 0}, 'p2': {'x': 30, 'y': 40}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}})
 
+        s = Shape()
+        d = OrderedDict([('v1', OrderedDict([('p1', OrderedDict([('x', 20)]))]))])
+        s.merge(d)
+        self.assertEqual(str(s), "{'v1': {'p1': {'x': 20, 'y': 0}, 'p2': {'x': 0, 'y': 0}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}}")
+        self.assertEqual(s._asdict(), {'v1': {'p1': {'x': 20, 'y': 0}, 'p2': {'x': 0, 'y': 0}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}})
+
 
     def test_simple(self):
         # Declare members as string
@@ -105,10 +117,16 @@ class TestMutableTuple(unittest.TestCase):
         self.assertNotEqual(Point(10, 11), Point(10, 12))
 
 
-    def test_dict(self):
+    def test_dict_simple(self):
         Point = mutabletuple('Point', ['x', 'y'])
         p = Point(10, 20)
         self.assertEqual(p._asdict(), {'x': 10, 'y': 20})
+
+
+    def test_ordered_dict_simple(self):
+        Point = mutabletuple('Point', ['x', 'y'])
+        p = Point(10, 20)
+        self.assertEqual(p.orderedDict(), OrderedDict([('x', 10), ('y', 20)]))
 
 
     def test_default(self):
@@ -198,16 +216,16 @@ except ImportError:
     pickle_modules = (pickle,)
 
 # types used for pickle tests
-#TestMT0 = mutabletuple('TestMT0', '')
-#TestMT = mutabletuple('TestMT', 'x y z')
+# TestMT0 = mutabletuple('TestMT0', '')
+# TestMT = mutabletuple('TestMT', 'x y z')
 
 # class TestMutableTuplePickle(unittest.TestCase):
-    # def test_pickle(self):
-    #     for p in (TestMT0(), TestMT(x=10, y=20, z=30)):
-    #         for module in pickle_modules:
-    #             for protocol in range(-1, module.HIGHEST_PROTOCOL + 1):
-    #                 q = module.loads(module.dumps(p, protocol))
-    #                 self.assertEqual(p, q)
-    #                 self.assertEqual(p._fields, q._fields)
-    #                 self.assertNotIn(b'OrderedDict', module.dumps(p, protocol))
+#     def test_pickle(self):
+#         for p in (TestMT0(), TestMT(x=10, y=20, z=30)):
+#             for module in pickle_modules:
+#                 for protocol in range(-1, module.HIGHEST_PROTOCOL + 1):
+#                     q = module.loads(module.dumps(p, protocol))
+#                     self.assertEqual(p, q)
+#                     self.assertEqual(p._fields, q._fields)
+#                     self.assertNotIn(b'OrderedDict', module.dumps(p, protocol))
 

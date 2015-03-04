@@ -13,6 +13,7 @@ Additional features over namedlist are:
 """
 
 import namedlist
+from collections import OrderedDict
 
 __all__ = ['mutabletuple', 'ismutabletuple', 'MtNoDefault', 'MtFactory']
 
@@ -54,6 +55,16 @@ def _mt_asdict(self):
             newdict[key] = value
     return newdict
 
+def _mt_orderedDict(self):
+    """Recursively convert mutabletuple to an ordered dict."""
+    newdict = OrderedDict()
+    for key in self._fields:
+        value = getattr(self, key)
+        if ismutabletuple(value):
+            newdict[key] = value.orderedDict()
+        else:
+            newdict[key] = value
+    return newdict
 
 def _mt_iteritems(self):
     """Iterate like dict."""
@@ -108,5 +119,6 @@ def mutabletuple(typename, field_names, default=MtNoDefault):
     mtuple._asdict     = _mt_asdict
     mtuple.iteritems   = _mt_iteritems
     mtuple.merge       = _mt_merge
+    mtuple.orderedDict = _mt_orderedDict
 
     return mtuple
