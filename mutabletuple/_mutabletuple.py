@@ -1,26 +1,45 @@
-"""[File Description].
+"""mutabletuple is similar to namedlist but with some additional features.
+
+Additional features over namedlist are:
+- Print like a native python dictionary
+- Improve support for nested mutabletuple
+- Conversion to dictionary is done recursively
+- Can iterate using iteritems like dictionary
+- Merge nested mutable tuple from dict or other mutabletuple
+- MtFactory support arguments
 
 @author       : Nicolas BESSOU <nicolas.bessou@gmail.com>
 @copyright    : Copyright 2015, Nicolas BESSOU
 """
 
-from namedlist import namedlist, NO_DEFAULT
+import namedlist
 
-__all__ = ['mutabletuple']
+__all__ = ['mutabletuple', 'ismutabletuple', 'MtNoDefault', 'MtFactory']
+
+# *****************************************************************************
+# namedtuple utilities
+# *****************************************************************************
+MtNoDefault = namedlist.NO_DEFAULT
+
+class MtFactory(namedlist.FACTORY):
+    """Wrapper around a callable. Used to specify a factory function instead of a plain default value."""
+    def __init__(self, callable, *args, **kwargs):
+        self._callable = callable
+        self.args = args
+        self.kwargs = kwargs
+
+    def call(self):
+        return self._callable(*self.args, **self.kwargs)
+
+    def __repr__(self):
+        return '{0!r}'.format(self._callable())
 
 
 # *****************************************************************************
-# Local functions
-# *****************************************************************************
-def _ismutabletuple(element):
-    return True if hasattr(element, 'MutableTupleUniqueIdentifier') else False
-
-
-# *****************************************************************************
-# Common member functions that extends namedlist functionality
+# Member functions that extends namedlist functionality
 # *****************************************************************************
 def _mt_repr(self):
-    """Print like dict."""
+    """Print mutable tuple like dict."""
     return '{{{0}}}'.format(', '.join('\'{0}\': {1!r}'.format(name, getattr(self, name)) for name in self._fields))
 
 
@@ -29,8 +48,8 @@ def _mt_asdict(self):
     newdict = {}
     for key in self._fields:
         value = getattr(self, key)
-        if _ismutabletuple(value):
-            newdict[key] = value.asdict()
+        if ismutabletuple(value):
+            newdict[key] = value._asdict()
         else:
             newdict[key] = value
     return newdict
@@ -43,40 +62,51 @@ def _mt_iteritems(self):
 
 
 def _mt_merge(self, container):
-    """Merge current mutabletuple with another mutabletuple or dictionary."""
+    """Recursively merge current mutabletuple with another mutabletuple or dictionary."""
     if not hasattr(container, 'iteritems'):
-        raise TypeError('???')
+        raise TypeError('Cannot merge with given type {}'.format(type(container)))
 
     for (key, value) in container.iteritems():
-        if _ismutabletuple(value) or isinstance(value, dict):
-            self.key.merge(value)
+        if isinstance(value, dict):
+            _mt_merge(getattr(self, key), value)
+        elif ismutabletuple(value):
+            getattr(self, key).merge(value)
         else:
             setattr(self, key, value)
 
 
-def _mt_getattr(self, attr):
-    """Get attribute from []."""
-    return self[attr]
+def _mt_init(self, *args):
+    """Initialize a namedtuple with fields, default values and factory."""
+    # Get values and call factory when required.
+    assert len(self._fields) == len(args)
+    values = [(fieldname, (value.call() if isinstance(value, MtFactory) else value)) for fieldname, value in zip(self._fields, args)]
 
-
-def _mt_setattr(self, attr, value):
-    """Set attribute from []."""
-    self[attr] = value
+    # sets all of the fields to their passed in values
+    for fieldname, value in values:
+        setattr(self, fieldname, value)
 
 
 # *****************************************************************************
-# Factory
+# Interface functions
 # *****************************************************************************
-def mutabletuple(typename, field_names, default=NO_DEFAULT):
-    """Factory function that creates a mutabletuple."""
-    newtuple = namedlist(typename, field_names, default)
+def ismutabletuple(element):
+    """Check if element is of type mutabletuple."""
+    return True if hasattr(element, 'MutableTupleUniqueIdentifier') else False
 
-    # Declare unique identifier to identify namedtuple class
-    newtuple.MutableTupleUniqueIdentifier = None
+def mutabletuple(typename, field_names, default=MtNoDefault):
+    """Factory function that creates a class mutabletuple."""
+    # Create a namedlist
+    mtuple = namedlist.namedlist(typename, field_names, default)
+
+    # Set unique attribute to identify mutabletuple classes
+    mtuple.MutableTupleUniqueIdentifier = None
 
     # Extend namedlist functionality
-    newtuple.__repr__  = _mt_repr
-    newtuple._asdict   = _mt_asdict
-    newtuple.iteritems = _mt_iteritems
+    (fields, defaults) = namedlist._fields_and_defaults(typename, field_names, default, rename=False)
+    mtuple.__init__    = namedlist._make_fn('__init__', _mt_init, fields, defaults)
+    mtuple.__repr__    = _mt_repr
+    mtuple._asdict     = _mt_asdict
+    mtuple.iteritems   = _mt_iteritems
+    mtuple.merge       = _mt_merge
 
-    return newtuple
+    return mtuple

@@ -1,34 +1,90 @@
 """Test package."""
 
 # Package to test
-from mutabletuple import mutabletuple
+from mutabletuple import mutabletuple, MtFactory, MtNoDefault
 
 # Native import
-import sys
 import unittest
 import pickle
-from collections import OrderedDict
 
 __all__ = ['TestMutableTuple']
 
-# def main():
-#     Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
-#     Vector = mutabletuple('Vector', [('p1', Point()), ('p2', Point())])
-#     Shape  = mutabletuple('Shape', [('v1', Vector()), ('v2', Vector())])
-
-#     p1 = Point(2, 3)
-#     v1 = Vector(Point(), p1)
-#     s1 = Shape()
-
-#     d1 = s1._asdict()
-
-#     for (k, v) in s1.iteritems():
-#         print (k, v)
-
-#     # pprint.pprint(d1, width=1)
-
 
 class TestMutableTuple(unittest.TestCase):
+
+    # NB: TODO: Test from dict
+    # NB: TODO: Test MtNoDefault
+    # NB: TODO: Test MtFactory with args
+
+    def test_factory_and_nested(self):
+        Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
+        Vector = mutabletuple('Vector', [('p1', MtFactory(Point)), ('p2', MtFactory(Point))])
+        Shape  = mutabletuple('Shape', [('v1', MtFactory(Vector)), ('v2', MtFactory(Vector))])
+        p1     = Point()
+        p2     = Point()
+        v1     = Vector(Point(0, 0), Point(0, 0))
+        v2     = Vector()
+        s1     = Shape(Vector(Point(0, 0), Point(0, 0)), Vector())
+        s2     = Shape()
+
+        # Test that modifying p2 do not modify p1
+        p2.x = 20
+        self.assertNotEqual(id(p1), id(p2))
+        self.assertEqual(p1, Point())
+        self.assertEqual(str(p1), "{'x': 0, 'y': 0}")
+
+        # Test that every new object is unique
+        self.assertNotEqual(id(v1), id(v2))
+        self.assertNotEqual(id(v1.p1), id(v2.p1))
+        self.assertNotEqual(id(v1.p2), id(v2.p2))
+        self.assertNotEqual(id(v1.p1), id(v1.p2))
+        self.assertNotEqual(id(v2.p1), id(v2.p2))
+
+        # Test that modifying v2 do not modify v1
+        v2.p1.x = 20
+        self.assertEqual(v1, Vector())
+        self.assertEqual(str(v1), "{'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}")
+
+
+        # Test that every new object is unique
+        self.assertNotEqual(id(s1), id(s2))
+        self.assertNotEqual(id(s1.v1), id(s2.v1))
+        self.assertNotEqual(id(s1.v2), id(s2.v2))
+        self.assertNotEqual(id(s1.v1), id(s1.v2))
+        self.assertNotEqual(id(s2.v1), id(s2.v2))
+
+        # Test that modifying s2 do not modify s1
+        s2.v1.p1.x = 20
+        self.assertEqual(s1, Shape())
+        self.assertEqual(str(s1), "{'v1': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}}")
+
+
+    def test_nested(self):
+        Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
+        Vector = mutabletuple('Vector', [('p1', MtFactory(Point)), ('p2', MtFactory(Point))])
+        Shape  = mutabletuple('Shape', [('v1', MtFactory(Vector)), ('v2', MtFactory(Vector))])
+
+        s = Shape()
+        self.assertEqual(str(s), "{'v1': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}}")
+        self.assertEqual(s._asdict(), {'v1': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}})
+
+        s.v1.p2.y = 30
+        self.assertEqual(str(s), "{'v1': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 30}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}}")
+        self.assertEqual(s._asdict(), {'v1': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 30}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}})
+
+
+    def test_merge(self):
+        Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
+        Vector = mutabletuple('Vector', [('p1', MtFactory(Point)), ('p2', MtFactory(Point))])
+        Shape  = mutabletuple('Shape', [('v1', MtFactory(Vector)), ('v2', MtFactory(Vector))])
+
+        s = Shape()
+        d = {'v1': {'p1': {'x': 20}, 'p2': Point(30, 40)}}
+        s.merge(d)
+        self.assertEqual(str(s), "{'v1': {'p1': {'x': 20, 'y': 0}, 'p2': {'x': 30, 'y': 40}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}}")
+        self.assertEqual(s._asdict(), {'v1': {'p1': {'x': 20, 'y': 0}, 'p2': {'x': 30, 'y': 40}}, 'v2': {'p1': {'x': 0, 'y': 0}, 'p2': {'x': 0, 'y': 0}}})
+
+
     def test_simple(self):
         # Declare members as string
         Point = mutabletuple('Point', 'x y')
@@ -48,10 +104,12 @@ class TestMutableTuple(unittest.TestCase):
         self.assertEqual(Point(10, 11), Point(10, 11))
         self.assertNotEqual(Point(10, 11), Point(10, 12))
 
+
     def test_dict(self):
         Point = mutabletuple('Point', ['x', 'y'])
         p = Point(10, 20)
         self.assertEqual(p._asdict(), {'x': 10, 'y': 20})
+
 
     def test_default(self):
         Point = mutabletuple('Point', 'x y z', default=100)
@@ -62,12 +120,18 @@ class TestMutableTuple(unittest.TestCase):
         self.assertEqual(Point()._asdict(), {'x': 100, 'y': 100, 'z': 100})
 
 
-    # Test add key
-    # Test remove key
-    # Test nested
-    # Test JSON
-    # Test from dict
-    # Test getattr, setattr
+    def test_unknown_key(self):
+        Point = mutabletuple('Point', 'x y')
+        p = Point(10, 20)
+        self.assertRaises(AttributeError, getattr, p, 'z')
+        self.assertRaises(AttributeError, setattr, p, 'z', 30)
+
+
+    def test_unique_identifier(self):
+        Point = mutabletuple('Point', 'x y')
+        p = Point(10, 20)
+        self.assertTrue(hasattr(p, 'MutableTupleUniqueIdentifier'))
+
 
     def test_writable(self):
         Point = mutabletuple('Point', ['x', ('y', 10), ('z', 20)], 100)
@@ -79,6 +143,16 @@ class TestMutableTuple(unittest.TestCase):
         self.assertEqual((p.x, p.y, p.z), (-1, -1, 20))
         p.z = None
         self.assertEqual((p.x, p.y, p.z), (-1, -1, None))
+
+
+    def test_MtNoDefault(self):
+        # MtNoDefault is only really useful with we're using a mapping
+        #  plus a default value. it's the only way to specify that
+        #  some of the fields use the default.
+        Point = mutabletuple('Point', {'x':0, 'y':MtNoDefault}, default=5)
+        p = Point()
+        self.assertEqual(p.x, 0)
+        self.assertEqual(p.y, 5)
 
 
     def test_iteration(self):
@@ -102,6 +176,7 @@ class TestMutableTuple(unittest.TestCase):
         self.assertEqual(list(p), [1, 2])
         self.assertRaises(IndexError, p.__getitem__, 2)
 
+
     def test_setitem(self):
         Point = mutabletuple('Point', 'a b')
         p = Point(1, 2)
@@ -123,8 +198,8 @@ except ImportError:
     pickle_modules = (pickle,)
 
 # types used for pickle tests
-TestMT0 = mutabletuple('TestMT0', '')
-TestMT = mutabletuple('TestMT', 'x y z')
+#TestMT0 = mutabletuple('TestMT0', '')
+#TestMT = mutabletuple('TestMT', 'x y z')
 
 # class TestMutableTuplePickle(unittest.TestCase):
     # def test_pickle(self):
