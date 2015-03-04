@@ -1,4 +1,11 @@
-"""Package setup configuration."""
+"""Package setup configuration.
+
+To Install package, run:
+    >>> python setup.py install
+
+To install package with a symlink, so that changes to the source files will be immediately available, run:
+    >>> python setup.py develop
+"""
 
 from __future__ import print_function
 from setuptools import setup, find_packages
