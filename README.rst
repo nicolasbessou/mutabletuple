@@ -14,6 +14,9 @@ which is similar to namedlist.namedlist with the following differences:
 * Can iterate using iteritems like dictionary
 * Merge nested mutable tuple from dict or other mutabletuple
 * MtFactory support arguments
+* Nested pickle support
+
+!! Warning !! Pickling does not work for mutabletuple that have no default values.
 
 
 Typical usage

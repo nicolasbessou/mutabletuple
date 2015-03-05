@@ -7,6 +7,9 @@ Additional features over namedlist are:
 - Can iterate using iteritems like dictionary
 - Merge nested mutable tuple from dict or other mutabletuple
 - MtFactory support arguments
+- Nested pickle support
+
+!! Warning !! Pickling does not work for mutabletuple that have no default values.
 
 @author       : Nicolas BESSOU <nicolas.bessou@gmail.com>
 @copyright    : Copyright 2015, Nicolas BESSOU
@@ -33,7 +36,7 @@ class MtFactory(namedlist.FACTORY):
         return self._callable(*self.args, **self.kwargs)
 
     def __repr__(self):
-        return '{0!r}'.format(self._callable())
+        return '{0!r}'.format(self.call())
 
 
 # *****************************************************************************
@@ -83,7 +86,10 @@ def _mt_merge(self, container):
         elif ismutabletuple(value):
             getattr(self, key).merge(value)
         else:
-            setattr(self, key, value)
+            if isinstance(self, dict):
+                self[key] = value
+            else:
+                setattr(self, key, value)
 
 
 def _mt_init(self, *args):
@@ -95,6 +101,18 @@ def _mt_init(self, *args):
     # sets all of the fields to their passed in values
     for fieldname, value in values:
         setattr(self, fieldname, value)
+
+
+def _mt_getstate(self):
+    return self._asdict()
+
+
+def _mt_setstate(self, state):
+    # We have to call init without argument because we don't want
+    # to overwrite the type of every field.
+    # Therefore, pickling only works for mutabletuple with default values
+    self.__init__()
+    self.merge(state)
 
 
 # *****************************************************************************
@@ -113,12 +131,18 @@ def mutabletuple(typename, field_names, default=MtNoDefault):
     mtuple.MutableTupleUniqueIdentifier = None
 
     # Extend namedlist functionality
-    (fields, defaults) = namedlist._fields_and_defaults(typename, field_names, default, rename=False)
-    mtuple.__init__    = namedlist._make_fn('__init__', _mt_init, fields, defaults)
-    mtuple.__repr__    = _mt_repr
-    mtuple._asdict     = _mt_asdict
-    mtuple.iteritems   = _mt_iteritems
-    mtuple.merge       = _mt_merge
-    mtuple.orderedDict = _mt_orderedDict
+    (fields, defaults)     = namedlist._fields_and_defaults(typename, field_names, default, rename=False)
+    mtuple.__init__        = namedlist._make_fn('__init__', _mt_init, fields, defaults)
+    mtuple.__repr__        = _mt_repr
+    mtuple._asdict         = _mt_asdict
+    mtuple.iteritems       = _mt_iteritems
+    mtuple.merge           = _mt_merge
+    mtuple.orderedDict     = _mt_orderedDict
+    mtuple.__getstate__    = _mt_getstate
+    mtuple.__setstate__    = _mt_setstate
+
+    # Assign the class as a global under the same name
+    # Required for pickle so the class seems declared at global level.
+    globals()[typename] = mtuple
 
     return mtuple

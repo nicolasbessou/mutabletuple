@@ -8,10 +8,13 @@ import unittest
 import pickle
 from collections import OrderedDict
 
-__all__ = ['TestMutableTuple']
-
 
 class TestMutableTuple(unittest.TestCase):
+
+    def test_factory_repr(self):
+        Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
+        self.assertEqual(str(MtFactory(Point, 2)), "{'x': 2, 'y': 0}")
+
 
     def test_factory_with_args(self):
         Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
@@ -117,10 +120,18 @@ class TestMutableTuple(unittest.TestCase):
         self.assertNotEqual(Point(10, 11), Point(10, 12))
 
 
-    def test_dict_simple(self):
-        Point = mutabletuple('Point', ['x', 'y'])
+    def test_dict(self):
+        Point  = mutabletuple('Point', [('x', 0), ('y', 0)])
+        Vector = mutabletuple('Vector', [('p1', MtFactory(Point)), ('p2', MtFactory(Point))])
+        Shape  = mutabletuple('Shape', [('v1', MtFactory(Vector)), ('v2', MtFactory(Vector))])
+
         p = Point(10, 20)
         self.assertEqual(p._asdict(), {'x': 10, 'y': 20})
+
+        s1 = Shape(Vector(Point(3, 4)))
+        s2 = Shape()
+        s2.merge(s1._asdict())
+        self.assertEqual(s1, s2)
 
 
     def test_ordered_dict_simple(self):
@@ -216,16 +227,17 @@ except ImportError:
     pickle_modules = (pickle,)
 
 # types used for pickle tests
-# TestMT0 = mutabletuple('TestMT0', '')
-# TestMT = mutabletuple('TestMT', 'x y z')
+TestMT0 = mutabletuple('TestMT0', '')
+TestMT1 = mutabletuple('TestMT1', 'x y z', default=4)
+TestMT2 = mutabletuple('TestMT2', [('mt1', MtFactory(TestMT1, 50, 60, 70)), ('a', 1), ('b', [2, 3, 4])])
 
-# class TestMutableTuplePickle(unittest.TestCase):
-#     def test_pickle(self):
-#         for p in (TestMT0(), TestMT(x=10, y=20, z=30)):
-#             for module in pickle_modules:
-#                 for protocol in range(-1, module.HIGHEST_PROTOCOL + 1):
-#                     q = module.loads(module.dumps(p, protocol))
-#                     self.assertEqual(p, q)
-#                     self.assertEqual(p._fields, q._fields)
-#                     self.assertNotIn(b'OrderedDict', module.dumps(p, protocol))
-
+# Warning Pickling does not work for mutabletuple that have no default values.
+class TestMutableTuplePickle(unittest.TestCase):
+    def test_pickle(self):
+        for p in (TestMT0(), TestMT1(x=10, y=20, z=30), TestMT2()):
+            for module in pickle_modules:
+                for protocol in range(-1, module.HIGHEST_PROTOCOL + 1):
+                    q = module.loads(module.dumps(p, protocol))
+                    self.assertEqual(p, q)
+                    self.assertEqual(p._fields, q._fields)
+                    self.assertNotIn(b'OrderedDict', module.dumps(p, protocol))
