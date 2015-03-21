@@ -1,15 +1,4 @@
-"""mutabletuple is similar to namedlist but with some additional features.
-
-Additional features over namedlist are:
-- Print like a native python dictionary
-- Improve support for nested mutabletuple
-- Conversion to dictionary is done recursively
-- Can iterate using iteritems like dictionary
-- Merge nested mutable tuple from dict or other mutabletuple
-- MtFactory support arguments
-- Nested pickle support
-
-!! Warning !! Pickling does not work for mutabletuple that have no default values.
+"""Similar to namedlist, but with additional features.
 
 @author       : Nicolas BESSOU <nicolas.bessou@gmail.com>
 @copyright    : Copyright 2015, Nicolas BESSOU
@@ -25,8 +14,11 @@ __all__ = ['mutabletuple', 'ismutabletuple', 'MtNoDefault', 'MtFactory']
 # *****************************************************************************
 MtNoDefault = namedlist.NO_DEFAULT
 
+
 class MtFactory(namedlist.FACTORY):
+
     """Wrapper around a callable. Used to specify a factory function instead of a plain default value."""
+
     def __init__(self, callable, *args, **kwargs):
         self._callable = callable
         self.args = args
@@ -58,6 +50,7 @@ def _mt_asdict(self):
             newdict[key] = value
     return newdict
 
+
 def _mt_orderedDict(self):
     """Recursively convert mutabletuple to an ordered dict."""
     newdict = OrderedDict()
@@ -68,6 +61,7 @@ def _mt_orderedDict(self):
         else:
             newdict[key] = value
     return newdict
+
 
 def _mt_iteritems(self):
     """Iterate like dict."""
@@ -121,6 +115,7 @@ def _mt_setstate(self, state):
 def ismutabletuple(element):
     """Check if element is of type mutabletuple."""
     return True if hasattr(element, 'MutableTupleUniqueIdentifier') else False
+
 
 def mutabletuple(typename, field_names, default=MtNoDefault):
     """Factory function that creates a class mutabletuple."""

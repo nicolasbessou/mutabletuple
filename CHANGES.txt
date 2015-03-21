@@ -5,4 +5,4 @@ Change log
 -----------------------------
 
 * Initial release.
-* Brings some additional features to a namedlist in order to support recursive use and recursive merge of the class.
+* Brings some additional features to a namedlist in order to support nested mutabletuple and recursive merge of the class.
