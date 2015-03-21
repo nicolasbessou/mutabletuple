@@ -5,12 +5,18 @@ To Install package, run:
 
 To install package with a symlink, so that changes to the source files will be immediately available, run:
     >>> python setup.py develop
+
+To run the tests:
+    >>> python setup.py test
+
+To upload the distribution:
+    >>> python setup.py sdist upload
 """
 
 from __future__ import print_function
 from setuptools import setup, find_packages
 
-__version__ = '0.1'
+__version__ = '0.1.1'
 
 setup(
     name='mutabletuple.mutabletuple',
