@@ -17,7 +17,7 @@ setup(
     version=__version__,
     description='Mutable named tuple that behave like dict with fixed keys.',
     long_description=open('README.rst').read() + '\n' + open('CHANGES.rst').read(),
-    url='https://bitbucket.org/nicolas_bessou/mutabletuple',
+    url='https://github.com/nicolasbessou/mutabletuple',
     include_package_data=True,
     author='Nicolas BESSOU',
     author_email='nicolas.bessou@gmail.com',
