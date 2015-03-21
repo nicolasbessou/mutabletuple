@@ -18,6 +18,7 @@ which is similar to namedlist.namedlist with the following differences:
 
 !! Warning !! Pickling does not work for mutabletuple that have no default values.
 
+The namedlist package can be found at: https://pypi.python.org/pypi/namedlist
 
 Typical usage
 =============
