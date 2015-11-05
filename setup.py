@@ -11,7 +11,7 @@ To run the tests:
 
 To check documentation consistency (require docutils module):
     >>> python setup.py --long-description | rst2html.py > _output.html
-    >>> python -m doctest README.txt
+    >>> python -m doctest README.md
 
 To upload the distribution:
     >>> python setup.py sdist upload
@@ -26,7 +26,7 @@ setup(
     name='mutabletuple',
     version=__version__,
     description='Similar to namedlist, but with additional features (nested class, recursive merge, etc).',
-    long_description=open('README.txt').read() + '\n' + open('CHANGES.txt').read(),
+    long_description=open('README.md').read() + '\n' + open('CHANGES.md').read(),
     url='https://github.com/nicolasbessou/mutabletuple',
     include_package_data=True,
     author='Nicolas BESSOU',

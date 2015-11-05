@@ -1,3 +1,5 @@
+*.sublime-workspace
+
 # System files
 .DS_Store
 

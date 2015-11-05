@@ -1,0 +1,15 @@
+{
+	"folders":
+	[
+		{
+			"folder_exclude_patterns":
+			[
+				"__build",
+				"__obj",
+				"__bin"
+			],
+			"follow_symlinks": true,
+			"path": ".."
+		}
+	]
+}
